@@ -1,6 +1,5 @@
 name: YouTube Downloader Backend
 
-# This allows the workflow to be triggered via the GitHub API
 on:
   workflow_dispatch:
     inputs:
@@ -45,11 +44,20 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      # Add your Cloudflare Warp setup steps here if running on GitHub runners
+      # Install and setup Cloudflare WARP for bypassing YouTube blocks
+      - name: Setup Cloudflare WARP
+        run: |
+          curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | sudo gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ focal main" | sudo tee /etc/apt/sources.list.d/cloudflare-client.list
+          sudo apt-get update && sudo apt-get install -y cloudflare-warp
+          warp-cli --accept-tos register
+          warp-cli --accept-tos set-mode proxy
+          warp-cli --accept-tos set-proxy-port 40000
+          warp-cli --accept-tos connect
+          sleep 5
 
       - name: Run Downloader Script
         run: |
-          # We pass the inputs directly from the API payload to the script
           python downloader.py \
             --url "${{ inputs.url }}" \
             --format "${{ inputs.format }}" \
