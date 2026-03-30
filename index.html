@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Downloader Hub</title>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #121212; color: white; padding: 40px; max-width: 600px; margin: 0 auto; }
+        input, select, button { width: 100%; padding: 12px; margin: 8px 0 20px 0; border-radius: 6px; border: 1px solid #333; background: #222; color: white; box-sizing: border-box;}
+        button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s;}
+        button:hover { background: #0056b3; }
+        .row { display: flex; gap: 10px; }
+        .danger-zone { border: 1px solid #ff4444; padding: 15px; border-radius: 6px; background: #2a0a0a; margin-bottom: 20px;}
+    </style>
+</head>
+<body>
+
+    <h2>🎥 Super Downloader</h2>
+
+    <div class="danger-zone">
+        <label>GitHub Personal Access Token (Requires 'repo' scope)</label>
+        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+    </div>
+
+    <label>YouTube URL</label>
+    <input type="text" id="ytUrl" placeholder="https://www.youtube.com/watch?v=...">
+
+    <div class="row">
+        <div style="flex: 1;">
+            <label>Format</label>
+            <select id="format">
+                <option value="mp4">MP4 (Video)</option>
+                <option value="mp3">MP3 (Audio)</option>
+            </select>
+        </div>
+        <div style="flex: 1;">
+            <label>Resolution (MP4 Only)</label>
+            <select id="resolution">
+                <option value="1080">1080p</option>
+                <option value="720">720p</option>
+                <option value="480">480p</option>
+                <option value="360">360p</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="row">
+        <div style="flex: 1;">
+            <label>Start Time (Optional)</label>
+            <input type="text" id="startTime" placeholder="00:01:30 or 90">
+        </div>
+        <div style="flex: 1;">
+            <label>End Time (Optional)</label>
+            <input type="text" id="endTime" placeholder="00:02:00 or 120">
+        </div>
+    </div>
+
+    <button onclick="triggerWorkflow()" id="runBtn">🚀 Start Download Engine</button>
+    <p id="status" style="text-align: center; color: #aaa;"></p>
+
+    <script>
+        async function triggerWorkflow() {
+            const token = document.getElementById('ghToken').value;
+            const url = document.getElementById('ytUrl').value;
+            const format = document.getElementById('format').value;
+            const resolution = document.getElementById('resolution').value;
+            const startTime = document.getElementById('startTime').value;
+            const endTime = document.getElementById('endTime').value;
+            const statusText = document.getElementById('status');
+            const runBtn = document.getElementById('runBtn');
+
+            if (!token || !url) {
+                alert("Token and YouTube URL are required!");
+                return;
+            }
+
+            // YOUR SPECIFIC REPO DETAILS
+            const owner = "zakeyhostbackupmins"; 
+            const repo = "youtube-downloader";
+            const workflow_id = "download.yml"; 
+            
+            // This creates the fetch URL: https://api.github.com/repos/zakeyhostbackupmins/youtube-downloader/actions/workflows/download.yml/dispatches
+            const fetchUrl = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow_id}/dispatches`;
+
+            runBtn.innerText = "⏳ Triggering...";
+            statusText.innerText = "Sending request to GitHub...";
+
+            try {
+                const response = await fetch(fetchUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/vnd.github.v3+json',
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ref: 'main', 
+                        inputs: {
+                            url: url,
+                            format: format,
+                            resolution: resolution,
+                            start_time: startTime,
+                            end_time: endTime
+                        }
+                    })
+                });
+
+                if (response.ok) {
+                    runBtn.innerText = "✅ Workflow Started!";
+                    runBtn.style.background = "#28a745";
+                    statusText.innerHTML = `Success! Check your <a href="https://github.com/${owner}/${repo}/actions" style="color:#007bff" target="_blank">GitHub Actions Tab</a> to download your file.`;
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || "Failed to trigger workflow.");
+                }
+            } catch (error) {
+                console.error(error);
+                runBtn.innerText = "❌ Error";
+                runBtn.style.background = "#dc3545";
+                statusText.innerText = error.message;
+            }
+
+            setTimeout(() => {
+                runBtn.innerText = "🚀 Start Download Engine";
+                runBtn.style.background = "#007bff";
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
