@@ -1,0 +1,64 @@
+name: YouTube Downloader Backend
+
+# This allows the workflow to be triggered via the GitHub API
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: 'YouTube URL'
+        required: true
+        type: string
+      format:
+        description: 'Format (mp4/mp3)'
+        required: true
+        default: 'mp4'
+        type: string
+      resolution:
+        description: 'Resolution'
+        required: false
+        default: '1080'
+        type: string
+      start_time:
+        description: 'Start time'
+        required: false
+        type: string
+      end_time:
+        description: 'End time'
+        required: false
+        type: string
+
+jobs:
+  download-and-process:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Dependencies
+        run: |
+          pip install yt-dlp
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      # Add your Cloudflare Warp setup steps here if running on GitHub runners
+
+      - name: Run Downloader Script
+        run: |
+          # We pass the inputs directly from the API payload to the script
+          python downloader.py \
+            --url "${{ inputs.url }}" \
+            --format "${{ inputs.format }}" \
+            --resolution "${{ inputs.resolution }}" \
+            --start "${{ inputs.start_time }}" \
+            --end "${{ inputs.end_time }}"
+
+      - name: Upload Result
+        uses: actions/upload-artifact@v4
+        with:
+          name: Processed-Video-or-Audio
+          path: final_output.*
