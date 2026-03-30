@@ -6,11 +6,13 @@
     <title>YT Downloader Hub</title>
     <style>
         body { font-family: system-ui, sans-serif; background: #121212; color: white; padding: 40px; max-width: 600px; margin: 0 auto; }
-        input, select, button { width: 100%; padding: 12px; margin: 8px 0 20px 0; border-radius: 6px; border: 1px solid #333; background: #222; color: white; box-sizing: border-box;}
+        input[type="text"], input[type="password"], select, button { width: 100%; padding: 12px; margin: 8px 0 20px 0; border-radius: 6px; border: 1px solid #333; background: #222; color: white; box-sizing: border-box;}
         button { background: #007bff; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.2s;}
         button:hover { background: #0056b3; }
         .row { display: flex; gap: 10px; }
         .danger-zone { border: 1px solid #ff4444; padding: 15px; border-radius: 6px; background: #2a0a0a; margin-bottom: 20px;}
+        .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: -10px; font-size: 0.9em; color: #aaa; }
+        input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -18,8 +20,12 @@
     <h2>🎥 Super Downloader</h2>
 
     <div class="danger-zone">
-        <label>GitHub Personal Access Token (Requires 'repo' scope)</label>
+        <label>GitHub Personal Access Token</label>
         <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        <div class="checkbox-row">
+            <input type="checkbox" id="saveToken">
+            <label for="saveToken" style="cursor: pointer;">Remember my token securely in this browser</label>
+        </div>
     </div>
 
     <label>YouTube URL</label>
@@ -59,8 +65,18 @@
     <p id="status" style="text-align: center; color: #aaa;"></p>
 
     <script>
+        // --- On Page Load: Check if we have a saved token ---
+        window.onload = function() {
+            const savedToken = localStorage.getItem('gh_pat_token');
+            if (savedToken) {
+                document.getElementById('ghToken').value = savedToken;
+                document.getElementById('saveToken').checked = true;
+            }
+        };
+
         async function triggerWorkflow() {
             const token = document.getElementById('ghToken').value;
+            const saveTokenChecked = document.getElementById('saveToken').checked;
             const url = document.getElementById('ytUrl').value;
             const format = document.getElementById('format').value;
             const resolution = document.getElementById('resolution').value;
@@ -74,12 +90,17 @@
                 return;
             }
 
-            // YOUR SPECIFIC REPO DETAILS
+            // --- Save or Remove Token based on checkbox ---
+            if (saveTokenChecked) {
+                localStorage.setItem('gh_pat_token', token);
+            } else {
+                localStorage.removeItem('gh_pat_token');
+            }
+
             const owner = "zakeyhostbackupmins"; 
             const repo = "youtube-downloader";
             const workflow_id = "download.yml"; 
             
-            // This creates the fetch URL: https://api.github.com/repos/zakeyhostbackupmins/youtube-downloader/actions/workflows/download.yml/dispatches
             const fetchUrl = `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${workflow_id}/dispatches`;
 
             runBtn.innerText = "⏳ Triggering...";
